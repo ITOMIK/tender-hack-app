@@ -2,16 +2,18 @@ from  gensim.models import Word2Vec
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 import requests
-from pdfParser import get_main_name, get_presition, get_ser_lic
+from pdfParser import get_main_name, get_presition, get_ser_lic, get_addres
 # Правильные значения для проверки, хранящиеся в переменной card
 
+file_name="tz.pdf"
+
 card = {
-    "name": "Шпагат джутовый 1,5 ктекс, 1 кг/боб.",
-    "isContractGuaranteeRequired": False,
-    "licenseFiles": [],
+    "name": get_main_name(file_name),
+    "isContractGuaranteeRequired": get_presition(file_name),
+    "licenseFiles": get_ser_lic(file_name),
     "delivery_period_from": 1,
     "delivery_period_to": 10,
-    "delivery_place": "г. Москва ул. Академика Виноградова, д. 4Б. ",
+    "delivery_place": get_addres(file_name),
     "startCost": 1364.0,
     "tech_spec_file": "техническое задание шпагат.docx",
     "contract_file": "Проект контракта.pdf"
@@ -50,18 +52,21 @@ def sentence_similarity(sentence1, sentence2):
 def check_data_with_card(data, card):
     results = {}
     # 1. Проверка наименования закупки
-    results['Наименование закупки'] = data.get('name') == get_main_name()
-    print(data.get('name'),get_main_name())
+    results['Наименование закупки'] = sentence_similarity(data.get('name'),card["name"]) >0.15
+
     # 2. Обеспечение исполнения контракта
-    results['Обеспечение контракта'] = data.get("isContractGuaranteeRequired") == get_presition()
+    results['Обеспечение контракта'] = data.get("isContractGuaranteeRequired") == card["isContractGuaranteeRequired"]
+
 
     # 3. Наличие сертификатов/лицензий
-    results['Сертификаты/лицензии'] = data.get("licenseFiles") == get_ser_lic()
+    results['Сертификаты/лицензии'] = data.get("licenseFiles") == card["licenseFiles"]
+
+    print(data.get("licenseFiles"),card["licenseFiles"])
 
     # 4. График поставки
     delivery = data.get("deliveries", [{}])[0]
     results['График поставки'] = (
-        delivery.get("periodDaysFrom") == card['delivery_period_from'] and 
+        delivery.get("periodDaysFrom") == card['delivery_period_from'] and
         delivery.get("periodDaysTo") == card['delivery_period_to'] and
         delivery.get("deliveryPlace") == card['delivery_place']
     )
@@ -92,5 +97,3 @@ if response.status_code == 200:
         print(f"{requirement}: {status}")
 else:
     print(f"Failed to retrieve data: {response.status_code}")
-
-
