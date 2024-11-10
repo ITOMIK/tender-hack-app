@@ -3,9 +3,20 @@ import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 import requests
 from pdfParser import get_main_name, get_presition, get_ser_lic, get_addres
+from tableparser import parse_pdf_tocsv
+import csv
 # Правильные значения для проверки, хранящиеся в переменной card
 
 file_name="tz.pdf"
+
+def parse_csv_to_object():
+    a= parse_pdf_tocsv(file_name)
+    res= []
+    with open(a[0], 'r', encoding='utf-8') as csvfile:
+        reader = csv.DictReader(csvfile, delimiter=',')
+        for row in reader:
+            res.append(row.get("Наименование \nтовара").replace("\n"," "))
+        return res
 
 card = {
     "name": get_main_name(file_name),
@@ -16,8 +27,10 @@ card = {
     "delivery_place": get_addres(file_name),
     "startCost": 1364.0,
     "tech_spec_file": "техническое задание шпагат.docx",
-    "contract_file": "Проект контракта.pdf"
+    "contract_file": "Проект контракта.pdf",
+    "spec":parse_csv_to_object()
 }
+
 
 
 def sentence_similarity(sentence1, sentence2):
@@ -61,7 +74,6 @@ def check_data_with_card(data, card):
     # 3. Наличие сертификатов/лицензий
     results['Сертификаты/лицензии'] = data.get("licenseFiles") == card["licenseFiles"]
 
-    print(data.get("licenseFiles"),card["licenseFiles"])
 
     # 4. График поставки
     delivery = data.get("deliveries", [{}])[0]
@@ -79,6 +91,10 @@ def check_data_with_card(data, card):
     results['Техническое задание'] = card['tech_spec_file'] in tech_spec_files
     results['Проект контракта'] = card['contract_file'] in tech_spec_files
 
+    # 7. Сравнение спецификации
+    count = 0
+    results['спецификация']=card["spec"].sort()==[item['name'] for item in data['items']].sort()
+            
     return results
 
 # Запрос к API и проверка
