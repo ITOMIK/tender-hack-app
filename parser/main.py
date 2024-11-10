@@ -9,6 +9,8 @@ import re
 # Правильные значения для проверки, хранящиеся в переменной card
 
 def compare_addresses(addr1, addr2):
+    if addr1 == None or addr2 ==None:
+        return False
     # Define regular expression patterns for address components
     street_pattern = r"(?:ул\.?|улица)\s+([а-яА-Я]+)"
     house_pattern = r"(д\.?|дом)\s+(\d+)"
@@ -43,7 +45,7 @@ def compare_addresses(addr1, addr2):
 
 
 
-file_name="tz.pdf"
+file_name="tz2.pdf"
 
 def parse_csv_to_object():
     a= parse_pdf_tocsv(file_name)
@@ -51,7 +53,10 @@ def parse_csv_to_object():
     with open(a[0], 'r', encoding='utf-8') as csvfile:
         reader = csv.DictReader(csvfile, delimiter=',')
         for row in reader:
-            res.append(row.get("Наименование \nтовара").replace("\n"," "))
+            q = row.get("Наименование \nтовара") 
+            if q==None:
+                q= row.get("Наименование")
+            res.append(q.replace("\n"," "))
         return res
 
 card = {
@@ -98,7 +103,6 @@ def check_data_with_card(data, card):
     results = {}
     # 1. Проверка наименования закупки
     results['Наименование закупки'] = sentence_similarity(data.get('name'),card["name"]) >0.15
-
     # 2. Обеспечение исполнения контракта
     results['Обеспечение контракта'] = data.get("isContractGuaranteeRequired") == card["isContractGuaranteeRequired"]
 
@@ -109,7 +113,7 @@ def check_data_with_card(data, card):
 
     # 4. График поставки
     delivery = data.get("deliveries", [{}])[0]
-    results['Место Поставки'] = compare_addresses(delivery.get("deliveryPlace"),card['delivery_place'])>0.4
+    results['Место Поставки'] = compare_addresses(delivery.get("deliveryPlace"),card['delivery_place'])
 
     # 5. Начальная цена
     #results['Начальная цена'] = data.get("startCost") == card['startCost']
@@ -124,7 +128,7 @@ def check_data_with_card(data, card):
 
 # Запрос к API и проверка
 url = "https://zakupki.mos.ru/newapi/api/Auction/Get"
-params = {"auctionId": 9864533}
+params = {"auctionId": 9862366}
 
 response = requests.get(url, params=params)
 
