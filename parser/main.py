@@ -5,7 +5,43 @@ import requests
 from pdfParser import get_main_name, get_presition, get_ser_lic, get_addres
 from tableparser import parse_pdf_tocsv
 import csv
+import re
 # Правильные значения для проверки, хранящиеся в переменной card
+
+def compare_addresses(addr1, addr2):
+    # Define regular expression patterns for address components
+    street_pattern = r"(?:ул\.?|улица)\s+([а-яА-Я]+)"
+    house_pattern = r"(д\.?|дом)\s+(\d+)"
+    city_pattern = r"(г\.?|город)\s+([а-яА-Я]+)"
+    postal_code_pattern = r"(\d+)"
+    addr2=addr2.replace("г г","г. ")
+    addr1=addr1.replace("г г","г. ")
+    print(addr1,addr2)
+    # Compile the patterns
+    street_regex = re.compile(street_pattern)
+    house_regex = re.compile(house_pattern)
+    city_regex = re.compile(city_pattern)
+    postal_code_regex = re.compile(postal_code_pattern)
+
+    # Extract address components from addr1 and addr2
+    addr1_street = street_regex.search(addr1)
+    addr1_house = house_regex.search(addr1)
+    addr1_city = city_regex.search(addr1)
+    addr1_postal_code = postal_code_regex.search(addr1)
+
+    addr2_street = street_regex.search(addr2)
+    addr2_house = house_regex.search(addr2)
+    addr2_city = city_regex.search(addr2)
+    addr2_postal_code = postal_code_regex.search(addr2)
+
+    if (addr1_street and addr2_street and addr1_street.group(1) == addr2_street.group(1)) and \
+       (addr1_house and addr2_house and addr1_house.group(2) == addr2_house.group(2)) and \
+       (addr1_city and addr2_city and addr1_city.group(2) == addr2_city.group(2)):
+        return True
+    else:
+        return False
+
+
 
 file_name="tz.pdf"
 
@@ -22,12 +58,8 @@ card = {
     "name": get_main_name(file_name),
     "isContractGuaranteeRequired": get_presition(file_name),
     "licenseFiles": get_ser_lic(file_name),
-    "delivery_period_from": 1,
-    "delivery_period_to": 10,
     "delivery_place": get_addres(file_name),
     "startCost": 1364.0,
-    "tech_spec_file": "техническое задание шпагат.docx",
-    "contract_file": "Проект контракта.pdf",
     "spec":parse_csv_to_object()
 }
 
@@ -77,19 +109,12 @@ def check_data_with_card(data, card):
 
     # 4. График поставки
     delivery = data.get("deliveries", [{}])[0]
-    results['График поставки'] = (
-        delivery.get("periodDaysFrom") == card['delivery_period_from'] and
-        delivery.get("periodDaysTo") == card['delivery_period_to'] and
-        delivery.get("deliveryPlace") == card['delivery_place']
-    )
+    results['Место Поставки'] = compare_addresses(delivery.get("deliveryPlace"),card['delivery_place'])>0.4
 
     # 5. Начальная цена
-    results['Начальная цена'] = data.get("startCost") == card['startCost']
+    #results['Начальная цена'] = data.get("startCost") == card['startCost']
 
     # 6. Наличие и корректность технического задания
-    tech_spec_files = [file.get("name") for file in data.get("files", [])]
-    results['Техническое задание'] = card['tech_spec_file'] in tech_spec_files
-    results['Проект контракта'] = card['contract_file'] in tech_spec_files
 
     # 7. Сравнение спецификации
     count = 0

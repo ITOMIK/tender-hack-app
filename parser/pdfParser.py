@@ -64,6 +64,6 @@ def get_addres(content):
 
     addresses = re.findall(pattern, content)
     print(addresses)
-    if len(addresses) > 1:
+    if len(addresses) >= 1:
         return addresses[0]
     return None
