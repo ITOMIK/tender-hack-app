@@ -1,7 +1,7 @@
 import PyPDF2
 import re
 
-
+file_status = {"parsed":False}
 def parse_file(file_name):
     with open(file_name, 'rb') as pdffileobj:
         pdfreader = PyPDF2.PdfReader(pdffileobj)
@@ -14,11 +14,13 @@ def parse_file(file_name):
                 if text:
                     txtfile.write(text)
     print("Текст успешно извлечен и сохранён в output.txt")
+    file_status["parsed"]=True
 
 
 def get_info_from_txt(func):
     def wrapper(file_name):
-        parse_file(file_name)
+        if not file_status["parsed"]:
+            parse_file(file_name)
 
         with open('output.txt', 'r', encoding='utf-8') as main_file:
             content = main_file.read()
@@ -63,7 +65,6 @@ def get_addres(content):
     pattern = r'г\.\s*[А-Яа-яёЁ]+\s*ул\.\s*[А-Яа-яёЁ]+\s*[А-Яа-яёЁ]*,\s*д\.\s*\d+[А-Яа-яёЁ]*'
 
     addresses = re.findall(pattern, content)
-    print(addresses)
     if len(addresses) >= 1:
         return addresses[0]
     return None

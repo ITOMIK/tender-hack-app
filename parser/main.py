@@ -18,7 +18,6 @@ def compare_addresses(addr1, addr2):
     postal_code_pattern = r"(\d+)"
     addr2=addr2.replace("г г","г. ")
     addr1=addr1.replace("г г","г. ")
-    print(addr1,addr2)
     # Compile the patterns
     street_regex = re.compile(street_pattern)
     house_regex = re.compile(house_pattern)
@@ -42,8 +41,6 @@ def compare_addresses(addr1, addr2):
         return True
     else:
         return False
-
-
 
 file_name="tz2.pdf"
 
@@ -102,7 +99,8 @@ def sentence_similarity(sentence1, sentence2):
 def check_data_with_card(data, card):
     results = {}
     # 1. Проверка наименования закупки
-    results['Наименование закупки'] = sentence_similarity(data.get('name'),card["name"]) >0.15
+    results['Наименование закупки'] = sentence_similarity(data.get('name'),card["name"]) >0.50
+
     # 2. Обеспечение исполнения контракта
     results['Обеспечение контракта'] = data.get("isContractGuaranteeRequired") == card["isContractGuaranteeRequired"]
 
@@ -122,7 +120,11 @@ def check_data_with_card(data, card):
 
     # 7. Сравнение спецификации
     count = 0
-    results['спецификация']=card["spec"].sort()==[item['name'] for item in data['items']].sort()
+    lOne = [item['name'] for item in data['items'] if item != ""]
+    lTwo = [item for item in card["spec"] if item != ""]
+    lOne.sort()
+    lTwo.sort()
+    results['спецификация']=lOne==lTwo
             
     return results
 
